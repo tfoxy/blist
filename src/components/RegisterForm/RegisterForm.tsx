@@ -7,7 +7,11 @@ import useAuthenticatedUser, { AuthenticatedUser } from '../../services/useAuthe
 
 export default function RegisterForm() {
   const [loading, setLoading] = useState<boolean>(false);
-  const [formData, setFormData] = useState<RegisterFormData>({});
+  const [formData, setFormData] = useState<RegisterFormData>({
+    username: '',
+    password: '',
+    confirmPassword: '',
+  });
   const [insertUser] = useInsertUserMutation();
   const [, setAuthenticatedUser] = useAuthenticatedUser();
 

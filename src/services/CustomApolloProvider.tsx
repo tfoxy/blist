@@ -1,4 +1,4 @@
-import React, { createContext, useMemo, useContext, useEffect } from 'react';
+import React, { createContext, useMemo, useContext } from 'react';
 import { ApolloProvider } from '@apollo/react-hooks';
 import { ApolloClient } from 'apollo-client';
 import { InMemoryCache } from 'apollo-cache-inmemory';
@@ -7,23 +7,20 @@ import { onError } from 'apollo-link-error';
 import { ApolloLink, split } from 'apollo-link';
 import { WebSocketLink } from 'apollo-link-ws';
 import { getMainDefinition } from 'apollo-utilities';
+import MutableLink from './MutableLink';
 
-interface ApolloClientOptions {
+interface CustomApolloClientOptions {
   authToken: string;
-  wsLink: WebSocketLink;
+  wsLink: MutableLink;
 }
 
-interface AuxiliarApolloClientOptions {
-  authToken: string;
-  wsLink?: WebSocketLink;
+const CustomApolloClientOptionsContext = createContext<CustomApolloClientOptions>(createCustomApolloClientOptions());
+
+function createCustomApolloClientOptions(): CustomApolloClientOptions {
+  return { authToken: '', wsLink: new MutableLink() };
 }
 
-const ApolloClientOptionsContext = createContext<ApolloClientOptions>({
-  authToken: '',
-  wsLink: new WebSocketLink({ uri: 'ws://localhost', options: { lazy: true } }),
-});
-
-function createWebScoketLink(options: AuxiliarApolloClientOptions) {
+function createWebScoketLink(options: CustomApolloClientOptions) {
   return new WebSocketLink({
     uri: `wss://${process.env.REACT_APP_GRAPHQL_API}`,
     options: {
@@ -43,7 +40,7 @@ function createWebScoketLink(options: AuxiliarApolloClientOptions) {
   });
 }
 
-function createHttpLink(options: ApolloClientOptions) {
+function createHttpLink(options: CustomApolloClientOptions) {
   const httpLink = new HttpLink({
     uri: `https://${process.env.REACT_APP_GRAPHQL_API}`,
   });
@@ -63,7 +60,7 @@ function createHttpLink(options: ApolloClientOptions) {
   return middlewareLink.concat(httpLink);
 }
 
-function createClient(options: ApolloClientOptions) {
+function createClient(options: CustomApolloClientOptions) {
   const link = split(
     ({ query }) => {
       const definition = getMainDefinition(query);
@@ -88,27 +85,30 @@ function createClient(options: ApolloClientOptions) {
 }
 
 export function useApolloAuthenticationToken(token: string) {
-  const apolloClientOptions = useContext(ApolloClientOptionsContext);
+  const apolloClientOptions = useContext(CustomApolloClientOptionsContext);
   apolloClientOptions.authToken = token;
-  useEffect(() => {
-    const subscriptionClient = apolloClientOptions.wsLink['subscriptionClient'];
-    if (subscriptionClient.status === WebSocket.OPEN) {
-      subscriptionClient.close();
-      subscriptionClient.connect();
+  apolloClientOptions.wsLink.link = useMemo(() => {
+    const prevWsLink = apolloClientOptions.wsLink.link;
+    if (prevWsLink) {
+      const subscriptionClient = (prevWsLink as WebSocketLink)['subscriptionClient'];
+      if (subscriptionClient.status === WebSocket.OPEN) {
+        subscriptionClient.close();
+      } else if (subscriptionClient.status === WebSocket.CONNECTING) {
+        subscriptionClient.onConnected(() => {
+          subscriptionClient.close();
+        });
+      }
     }
-  }, [apolloClientOptions.authToken, apolloClientOptions.wsLink]);
+    return token ? createWebScoketLink(apolloClientOptions) : null;
+  }, [apolloClientOptions, token]);
 }
 
 export default function CustomApolloProvider({ children }: { children: React.ReactNode }) {
-  const apolloClientOptions = useMemo(() => {
-    const options: AuxiliarApolloClientOptions = { authToken: '' };
-    options.wsLink = createWebScoketLink(options);
-    return options as ApolloClientOptions;
-  }, []);
-  const client = useMemo(() => createClient(apolloClientOptions), [apolloClientOptions]);
+  const customApolloClientOptions = useMemo(createCustomApolloClientOptions, []);
+  const client = useMemo(() => createClient(customApolloClientOptions), [customApolloClientOptions]);
   return (
-    <ApolloClientOptionsContext.Provider value={apolloClientOptions}>
+    <CustomApolloClientOptionsContext.Provider value={customApolloClientOptions}>
       <ApolloProvider client={client} children={children} />
-    </ApolloClientOptionsContext.Provider>
+    </CustomApolloClientOptionsContext.Provider>
   );
 }

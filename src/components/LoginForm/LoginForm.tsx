@@ -6,7 +6,10 @@ import useAuthenticatedUser, { AuthenticatedUser } from '../../services/useAuthe
 
 export default function LoginForm() {
   const [loading, setLoading] = useState<boolean>(false);
-  const [formData, setFormData] = useState<LoginFormData>({});
+  const [formData, setFormData] = useState<LoginFormData>({
+    username: '',
+    password: ''
+  });
   const [, setAuthenticatedUser] = useAuthenticatedUser();
 
   const onLoginFormFieldChange = useCallback(

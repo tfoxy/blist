@@ -1,14 +1,16 @@
 import React, { useCallback } from 'react';
+import { withRouter } from 'react-router';
 import useAuthenticatedUser from '../../services/useAuthenticatedUser';
-// import { Props } from './types';
+import { Props } from './types';
 // import styles from './BaseHeader.module.css';
 
-export default function BaseHeader() {
+function BaseHeader({ history }: Props) {
   const [authenticatedUser, setAuthenticatedUser] = useAuthenticatedUser();
 
   const logout = useCallback(() => {
     setAuthenticatedUser(null);
-  }, [setAuthenticatedUser]);
+    history.push('/');
+  }, [setAuthenticatedUser, history]);
 
   if (!authenticatedUser) {
     return null;
@@ -23,3 +25,5 @@ export default function BaseHeader() {
     </div>
   );
 }
+
+export default withRouter(BaseHeader);
