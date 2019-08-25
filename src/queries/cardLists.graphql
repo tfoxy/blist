@@ -1,0 +1,15 @@
+subscription cardLists($boardId: uuid!) {
+  card_list(where: { board_id: { _eq: $boardId } }) {
+    id
+    name
+    created_at
+    order
+    cards {
+      id
+      name
+      created_at
+      order
+      description
+    }
+  }
+}

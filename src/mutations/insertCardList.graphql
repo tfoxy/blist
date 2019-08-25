@@ -1,0 +1,7 @@
+mutation insertCardList($name: String!, $boardId: uuid!, $order: Int!) {
+  insert_card_list(objects: { name: $name, board_id: $boardId, order: $order }) {
+    returning {
+      id
+    }
+  }
+}

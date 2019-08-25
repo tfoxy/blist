@@ -1,0 +1,8 @@
+subscription board($boardId: uuid!) {
+  board_by_pk(id: $boardId) {
+    id
+    name
+    created_at
+    color
+  }
+}

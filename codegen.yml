@@ -1,0 +1,11 @@
+overwrite: true
+schema: 'https://blist-api.herokuapp.com/v1/graphql'
+documents: 'src/**/*.graphql'
+generates:
+  src/generated/graphql.tsx:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-react-apollo'
+    config:
+      withHooks: true

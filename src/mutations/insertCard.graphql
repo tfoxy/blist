@@ -1,0 +1,7 @@
+mutation insertCard($name: String!, $cardListId: uuid!, $order: Int!) {
+  insert_card(objects: { name: $name, card_list_id: $cardListId, order: $order }) {
+    returning {
+      id
+    }
+  }
+}
